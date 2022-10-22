@@ -20,7 +20,7 @@ func DownloadMail(User aws.Config, Bucket string, BucketPrefix string) error {
 			MailId := uuid.New()
 			// fmt.Print("DownloadMail > Key: ", Key, " => MailId: ", MailId, "\n")
 
-			// 다운로드 받을 위치 설정
+			// 현재 경로 가져오기
 			pwd, err := os.Getwd()
 			if err != nil {
 				return err // os.Getwd() 예외처리
