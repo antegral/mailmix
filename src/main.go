@@ -5,8 +5,8 @@ import (
 )
 
 func main() {
-	if err := Log.InitLogFile(); err != nil {
-		Log.Error.Println(err)
+	if err := Log.Init(); err != nil {
+		panic(err)
 	}
 
 	Log.Info.Println("Starting MailMix...")
