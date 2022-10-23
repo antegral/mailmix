@@ -15,15 +15,11 @@ var (
 	Error   *log.Logger
 )
 
-func Init(VerboseHandle io.Writer, infoHandle io.Writer, warningHandle io.Writer, errorHandle io.Writer) {
-	Verbose = log.New(VerboseHandle, "[VERBOSE] ", log.Ldate|log.Ltime|log.Lshortfile)
-	Info = log.New(infoHandle, "[INFO] ", log.Ldate|log.Ltime|log.Lshortfile)
-	Warn = log.New(warningHandle, "[WARNING] ", log.Ldate|log.Ltime|log.Lshortfile)
-	Error = log.New(errorHandle, "[ERROR] ", log.Ldate|log.Ltime|log.Lshortfile)
-}
-
-func InitLogFile() error {
-	Init(os.Stdout, os.Stdout, os.Stdout, os.Stderr)
+func Init() error {
+	Verbose = log.New(os.Stdout, "[VERBOSE] ", log.Ldate|log.Ltime|log.Lshortfile)
+	Info = log.New(os.Stdout, "[INFO] ", log.Ldate|log.Ltime|log.Lshortfile)
+	Warn = log.New(os.Stdout, "[WARNING] ", log.Ldate|log.Ltime|log.Lshortfile)
+	Error = log.New(os.Stderr, "[ERROR] ", log.Ldate|log.Ltime|log.Lshortfile)
 
 	date := time.Now().Format("2006-01-02 15:04:05")
 	pwd, err := os.Getwd()
@@ -49,8 +45,12 @@ func InitLogFile() error {
 		return err // os.OpenFile() 예외처리
 	}
 
-	defer LogFile.Close()
-	log.SetOutput(LogFile)
+	Writer := io.MultiWriter(LogFile, os.Stdout)
+
+	Verbose.SetOutput(Writer)
+	Info.SetOutput(Writer)
+	Warn.SetOutput(Writer)
+	Error.SetOutput(Writer)
 
 	return nil
 }
@@ -60,5 +60,5 @@ func IsFileExists(filename string) bool {
 	if os.IsNotExist(err) {
 		return false
 	}
-	return !info.IsDir()
+	return info.IsDir()
 }
