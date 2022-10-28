@@ -1,10 +1,12 @@
 package Log
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -15,21 +17,23 @@ var (
 	Error   *log.Logger
 )
 
-func Init() error {
-	Verbose = log.New(os.Stdout, "[VERBOSE] ", log.Ldate|log.Ltime|log.Lshortfile)
-	Info = log.New(os.Stdout, "[INFO] ", log.Ldate|log.Ltime|log.Lshortfile)
-	Warn = log.New(os.Stdout, "[WARNING] ", log.Ldate|log.Ltime|log.Lshortfile)
-	Error = log.New(os.Stderr, "[ERROR] ", log.Ldate|log.Ltime|log.Lshortfile)
+func Init(mode int) error {
+	Verbose = log.New(io.Discard, "[VERBOSE] ", log.Ldate|log.Ltime|log.Lshortfile)
+	Info = log.New(io.Discard, "[INFO] ", log.Ldate|log.Ltime|log.Lshortfile)
+	Warn = log.New(io.Discard, "[WARNING] ", log.Ldate|log.Ltime|log.Lshortfile)
+	Error = log.New(io.Discard, "[ERROR] ", log.Ldate|log.Ltime|log.Lshortfile)
 
-	date := time.Now().Format("2006-01-02 15:04:05")
+	date := time.Now().Format("2006-01-02_150405")
 	pwd, err := os.Getwd()
 	if err != nil {
 		return err // os.Getwd() 예외처리
 	}
 
 	// 경로 포맷팅
-	FolderPath := fmt.Sprint(pwd, "/logs")
-	FilePath := fmt.Sprint(pwd, "/logs/", date, ".log")
+	// FolderPath := fmt.Sprint(pwd, "/logs")
+	// FilePath := fmt.Sprint(pwd, "/logs/", date, ".log")
+	FolderPath := filepath.Join(pwd, "logs")
+	FilePath := filepath.Join(pwd, "logs", fmt.Sprint(date, ".log"))
 
 	os.MkdirAll(FolderPath, os.ModePerm)
 
@@ -47,18 +51,44 @@ func Init() error {
 
 	Writer := io.MultiWriter(LogFile, os.Stdout)
 
-	Verbose.SetOutput(Writer)
-	Info.SetOutput(Writer)
-	Warn.SetOutput(Writer)
-	Error.SetOutput(Writer)
+	if mode < 1 {
+		panic("Invaild logging mode. (1, 2, 3, 4)")
+	}
+
+	if mode >= 1 {
+		Error = log.New(os.Stderr, "[ERROR] ", log.Ldate|log.Ltime|log.Lshortfile)
+		Error.SetOutput(Writer)
+	}
+
+	if mode >= 2 {
+		Warn = log.New(os.Stdout, "[WARNING] ", log.Ldate|log.Ltime|log.Lshortfile)
+		Warn.SetOutput(Writer)
+	}
+
+	if mode >= 3 {
+		Info = log.New(os.Stdout, "[INFO] ", log.Ldate|log.Ltime|log.Lshortfile)
+		Info.SetOutput(Writer)
+	}
+
+	if mode >= 4 {
+		Verbose = log.New(os.Stdout, "[VERBOSE] ", log.Ldate|log.Ltime|log.Lshortfile)
+		Verbose.SetOutput(Writer)
+	}
+
+	if mode > 4 {
+		Warn.Println("Logging mode is greater than 4. Logging mode is set to the maximum level.")
+	}
 
 	return nil
 }
 
 func IsFileExists(filename string) bool {
-	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
+	if _, err := os.Stat(filename); err == nil {
+		return true
+	} else if errors.Is(err, os.ErrNotExist) {
 		return false
+	} else {
+		fmt.Println("Log System Initialization Error!")
+		panic(err)
 	}
-	return info.IsDir()
 }
