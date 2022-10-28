@@ -5,7 +5,7 @@ import (
 )
 
 func main() {
-	if err := Log.Init(); err != nil {
+	if err := Log.Init(4); err != nil {
 		panic(err)
 	}
 

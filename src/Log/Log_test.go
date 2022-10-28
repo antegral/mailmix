@@ -5,7 +5,7 @@ import (
 )
 
 func TestLogInit(t *testing.T) {
-	Init()
+	Init(4)
 	Verbose.Println("Test successful.")
 	Info.Println("Test successful.")
 	Warn.Println("Test successful.")
