@@ -7,7 +7,6 @@ import (
 
 	AwsGateway "antegral.net/mailmix/src/AwsGateway"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
 )
@@ -15,7 +14,7 @@ import (
 // 메일이 저장될 파일을 만들고 다운로드 합니다.
 func DownloadMail(User aws.Config, Bucket string, BucketPrefix string) error {
 	if e := AwsGateway.GetFilesInStorage(User, Bucket, BucketPrefix,
-		func(Downloader *manager.Downloader, Bucket string, Key string) error {
+		func(Action AwsGateway.StorageActions, Bucket string, Key string) error {
 			// 메일 고유번호 설정
 			MailId := uuid.New()
 			// fmt.Print("DownloadMail > Key: ", Key, " => MailId: ", MailId, "\n")
@@ -41,7 +40,7 @@ func DownloadMail(User aws.Config, Bucket string, BucketPrefix string) error {
 			defer File.Close()
 
 			// 메일 다운로드
-			if _, err = Downloader.Download(context.TODO(), File, &s3.GetObjectInput{
+			if _, err = Action.Download.Download(context.TODO(), File, &s3.GetObjectInput{
 				Bucket: &Bucket,
 				Key:    &Key,
 			}); err != nil {
