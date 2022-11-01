@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var CreateTableQuery = `
+var createTableQuery = `
 CREATE TABLE IF NOT EXISTS "AwsCredential" (
 	"Uuid"	TEXT NOT NULL,
 	"Region"	TEXT NOT NULL,
@@ -34,27 +35,25 @@ CREATE TABLE IF NOT EXISTS "Account" (
 	FOREIGN KEY("TeamUuid") REFERENCES "Team"("Uuid") ON DELETE SET NULL ON UPDATE CASCADE,
 	PRIMARY KEY("Uuid")
 );
+
+CREATE TABLE IF NOT EXISTS "Mail" (
+	"Uuid"	TEXT,
+	"From"	TEXT,
+	"To"	TEXT,
+	PRIMARY KEY("Uuid")
+);
 `
 
-func Init() error {
-	// 현재 경로 가져오기
-	pwd, err := os.Getwd()
-	if err != nil {
-		return err // os.Getwd() 예외처리
-	}
-
-	// 경로 포맷팅
-	FilePath := fmt.Sprint(pwd, "/database.db")
-
+func Init(FilePath string) error {
 	// os.Create로 데이터베이스 생성
-	if _, err = os.Create(FilePath); err != nil {
+	if _, err := os.Create(FilePath); err != nil {
 		return err // os.Create() 예외처리
 	}
 
-	if Database, err := Get(FilePath); err != nil {
+	if Database, err := GetDatabase(FilePath); err != nil {
 		return err
 	} else {
-		if _, err = Database.Exec(CreateTableQuery); err != nil {
+		if _, err = Database.Exec(createTableQuery); err != nil {
 			return err
 		}
 	}
@@ -62,10 +61,24 @@ func Init() error {
 	return nil
 }
 
-func Get(FilePath string) (*sql.DB, error) {
+func GetDatabase(FilePath string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", FilePath)
 	if err != nil {
 		return nil, err
 	}
 	return db, err
+}
+
+func GetDatabasePath() (string, error) {
+	// 현재 경로 가져오기
+	pwd, err := os.Getwd()
+	if err != nil {
+		return "", err // os.Getwd() 예외처리
+	}
+
+	// 경로 포맷팅
+	return fmt.Sprint(pwd, "/database.db"), nil
+}
+
+func GetUser(Uuid uuid.UUID) {
 }
