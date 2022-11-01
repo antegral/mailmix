@@ -1,3 +1,5 @@
 /logs
 /src/Log/logs
 /src/Mail/MailStorage
+/database.db
+/src/Database/database.db
