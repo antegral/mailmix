@@ -18,16 +18,21 @@ CREATE TABLE Team (
 );
 
 CREATE TABLE Account (
-	Uuid			TEXT NOT NULL,
-	TeamUuid	TEXT,
-	Username	TEXT NOT NULL,
-	Password	TEXT NOT NULL,
+	Uuid				TEXT NOT NULL,
+	TeamUuid		TEXT,
+	Username		TEXT NOT NULL,
+	Password		TEXT NOT NULL,
   PRIMARY KEY(Uuid),
 	FOREIGN KEY(TeamUuid) REFERENCES Team(Uuid) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 CREATE TABLE Mail (
-	Uuid			TEXT NOT NULL,
-	OwnerUuid	TEXT NOT NULL,
+	Uuid				TEXT NOT NULL,
+	OwnerUuid		TEXT NOT NULL,
 	PRIMARY KEY(Uuid)
+);
+
+CREATE TABLE Session (
+	Uuid        TEXT,
+	AccountUuid TEXT
 );
