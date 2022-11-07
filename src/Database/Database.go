@@ -34,48 +34,67 @@ CREATE TABLE IF NOT EXISTS Team (
 CREATE TABLE IF NOT EXISTS Account (
 	Uuid				TEXT NOT NULL,
 	TeamUuid		TEXT,
-	Username		TEXT NOT NULL,
+	Username		TEXT NOT NULL UNIQUE,
 	Password		TEXT NOT NULL,
 	MailAddress	TEXT NOT NULL UNIQUE,
+	IsQuit      INTEGER NOT NULL DEFAULT 0,
   CreatedAt		TIMESTEMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY(Uuid),
 	FOREIGN KEY(TeamUuid) REFERENCES Team(Uuid) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS Mail (
+CREATE TABLE IF NOT EXISTS MailBox (
 	Uuid				TEXT NOT NULL,
+	Name				TEXT NOT NULL,
 	OwnerUuid		TEXT NOT NULL,
   CreatedAt		TIMESTEMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY(Uuid)
 );
 
+CREATE TABLE Mail (
+	Uuid				TEXT NOT NULL,
+  BoxUuid     TEXT NOT NULL,
+	CreatedAt		TIMESTEMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY(Uuid)
+);
+
 CREATE TABLE IF NOT EXISTS Session (
-	Uuid        TEXT,
-	AccountUuid TEXT,
+	Uuid        TEXT NOT NULL,
+	AccountUuid TEXT NOT NULL,
   CreatedAt		TIMESTEMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY(Uuid)
 );
 `
 
-func Init(FilePath string) error {
-	// os.Create로 데이터베이스 생성
-	if _, err := os.Create(FilePath); err != nil {
-		return err // os.Create() 예외처리
+func Init() error {
+	DBFilePath, err := GetDatabasePath()
+	if err != nil {
+		return err
 	}
 
-	if Database, err := GetDatabase(FilePath); err != nil {
+	if _, err := os.Create(DBFilePath); err != nil {
 		return err
-	} else {
-		if _, err = Database.Exec(createTableQuery); err != nil {
-			return err
-		}
+	}
+
+	Database, err := GetDatabase()
+	if err != nil {
+		return err
+	}
+
+	if _, err = Database.Exec(createTableQuery); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func GetDatabase(FilePath string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", FilePath)
+func GetDatabase() (*sql.DB, error) {
+	DBFilePath, err := GetDatabasePath()
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := sql.Open("sqlite3", DBFilePath)
 	if err != nil {
 		return nil, err
 	}
