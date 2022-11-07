@@ -22,6 +22,7 @@ CREATE TABLE Account (
 	TeamUuid		TEXT,
 	Username		TEXT NOT NULL,
 	Password		TEXT NOT NULL,
+  MailAddress	TEXT NOT NULL UNIQUE,
   PRIMARY KEY(Uuid),
 	FOREIGN KEY(TeamUuid) REFERENCES Team(Uuid) ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -34,5 +35,6 @@ CREATE TABLE Mail (
 
 CREATE TABLE Session (
 	Uuid        TEXT,
-	AccountUuid TEXT
+	AccountUuid TEXT,
+  PRIMARY KEY(Uuid)
 );
