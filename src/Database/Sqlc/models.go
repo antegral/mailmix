@@ -9,10 +9,12 @@ import (
 )
 
 type Account struct {
-	Uuid     string
-	Teamuuid sql.NullString
-	Username string
-	Password string
+	Uuid        string
+	Teamuuid    sql.NullString
+	Username    string
+	Password    string
+	Mailaddress string
+	Isquit      int64
 }
 
 type AwsCredential struct {
@@ -26,7 +28,22 @@ type AwsCredential struct {
 
 type Mail struct {
 	Uuid      string
+	Boxuuid   string
+	Header    string
+	Sentat    string
+	Createdat string
+	Size      int64
+}
+
+type MailBox struct {
+	Uuid      string
+	Name      string
 	Owneruuid string
+}
+
+type Session struct {
+	Uuid        string
+	Accountuuid string
 }
 
 type Team struct {
