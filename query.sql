@@ -1,7 +1,7 @@
 -- name: CreateAwsCredential :one
 INSERT INTO AwsCredential (
-  uuid,
-  region,
+	uuid,
+	region,
 	id,
 	secret,
 	bucketid,
@@ -26,7 +26,7 @@ INSERT INTO Team (
 	uuid,
 	name,
 	description,
-  credentialuuid
+	credentialuuid
 ) VALUES (
   ?, ?, ?, ?
 )
@@ -35,8 +35,8 @@ RETURNING *;
 -- name: CreateMailBox :one
 INSERT INTO MailBox (
 	uuid,
-  name,
-  owneruuid
+	name,
+	owneruuid
 ) VALUES (
   ?, ?, ?
 )
@@ -45,7 +45,7 @@ RETURNING *;
 -- name: CreateMail :one
 INSERT INTO Mail (
 	uuid,
-  boxuuid
+	boxuuid
 ) VALUES (
   ?, ?
 )
@@ -81,7 +81,11 @@ WHERE uuid = ?;
 SELECT * FROM Account
 WHERE username = ?;
 
--- name: GetMailBoxInfo :one
+-- name: GetAllMailBoxInfo :many
+SELECT * FROM MailBox
+WHERE owneruuid = ?;
+
+-- name: GetOneMailBoxInfo :one
 SELECT * FROM MailBox
 WHERE name = ?
 AND owneruuid = ?;
