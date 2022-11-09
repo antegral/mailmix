@@ -38,6 +38,10 @@ CREATE TABLE MailBox (
 CREATE TABLE Mail (
 	Uuid				TEXT NOT NULL,
   BoxUuid     TEXT NOT NULL,
+  Header      TEXT NOT NULL,
+  SentAt      TEXT NOT NULL,
+  CreatedAt   TEXT NOT NULL,
+  Size        INTEGER NOT NULL,
 	PRIMARY KEY(Uuid)
 );
 
