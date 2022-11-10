@@ -8,6 +8,10 @@ package ORM
 import (
 	"context"
 	"database/sql"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 const countMailBox = `-- name: CountMailBox :one
@@ -19,7 +23,7 @@ AND owneruuid = ?
 
 type CountMailBoxParams struct {
 	Name      string
-	Owneruuid string
+	Owneruuid uuid.UUID
 }
 
 func (q *Queries) CountMailBox(ctx context.Context, arg CountMailBoxParams) (int64, error) {
@@ -32,22 +36,35 @@ func (q *Queries) CountMailBox(ctx context.Context, arg CountMailBoxParams) (int
 const createAccount = `-- name: CreateAccount :one
 INSERT INTO Account (
 	uuid,
+	teamuuid,
 	username,
-	password
+	password,
+	mailaddress,
+	isquit
 ) VALUES (
-  ?, ?, ?
+	?, ?, ?, ?, ?, ?
 )
-RETURNING uuid, teamuuid, username, password, mailaddress, isquit
+RETURNING uuid, teamuuid, username, password, mailaddress, isquit, createdat
 `
 
 type CreateAccountParams struct {
-	Uuid     string
-	Username string
-	Password string
+	Uuid        uuid.UUID
+	Teamuuid    uuid.NullUUID
+	Username    string
+	Password    string
+	Mailaddress string
+	Isquit      bool
 }
 
 func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error) {
-	row := q.db.QueryRowContext(ctx, createAccount, arg.Uuid, arg.Username, arg.Password)
+	row := q.db.QueryRowContext(ctx, createAccount,
+		arg.Uuid,
+		arg.Teamuuid,
+		arg.Username,
+		arg.Password,
+		arg.Mailaddress,
+		arg.Isquit,
+	)
 	var i Account
 	err := row.Scan(
 		&i.Uuid,
@@ -56,6 +73,44 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (A
 		&i.Password,
 		&i.Mailaddress,
 		&i.Isquit,
+		&i.Createdat,
+	)
+	return i, err
+}
+
+const createAttachment = `-- name: CreateAttachment :one
+INSERT INTO Attachment (
+	uuid,
+	mailuuid,
+	cid,
+	contenttype
+) VALUES (
+	?, ?, ?, ?
+)
+RETURNING uuid, mailuuid, cid, contenttype, createdat
+`
+
+type CreateAttachmentParams struct {
+	Uuid        uuid.UUID
+	Mailuuid    uuid.UUID
+	Cid         string
+	Contenttype string
+}
+
+func (q *Queries) CreateAttachment(ctx context.Context, arg CreateAttachmentParams) (Attachment, error) {
+	row := q.db.QueryRowContext(ctx, createAttachment,
+		arg.Uuid,
+		arg.Mailuuid,
+		arg.Cid,
+		arg.Contenttype,
+	)
+	var i Attachment
+	err := row.Scan(
+		&i.Uuid,
+		&i.Mailuuid,
+		&i.Cid,
+		&i.Contenttype,
+		&i.Createdat,
 	)
 	return i, err
 }
@@ -71,11 +126,11 @@ INSERT INTO AwsCredential (
 ) VALUES (
   ?, ?, ?, ?, ?, ?
 )
-RETURNING uuid, region, id, secret, bucketid, bucketprefix
+RETURNING uuid, region, id, secret, bucketid, bucketprefix, createdat
 `
 
 type CreateAwsCredentialParams struct {
-	Uuid         string
+	Uuid         uuid.UUID
 	Region       string
 	ID           string
 	Secret       string
@@ -83,7 +138,7 @@ type CreateAwsCredentialParams struct {
 	Bucketprefix sql.NullString
 }
 
-func (q *Queries) CreateAwsCredential(ctx context.Context, arg CreateAwsCredentialParams) (AwsCredential, error) {
+func (q *Queries) CreateAwsCredential(ctx context.Context, arg CreateAwsCredentialParams) (Awscredential, error) {
 	row := q.db.QueryRowContext(ctx, createAwsCredential,
 		arg.Uuid,
 		arg.Region,
@@ -92,7 +147,7 @@ func (q *Queries) CreateAwsCredential(ctx context.Context, arg CreateAwsCredenti
 		arg.Bucketid,
 		arg.Bucketprefix,
 	)
-	var i AwsCredential
+	var i Awscredential
 	err := row.Scan(
 		&i.Uuid,
 		&i.Region,
@@ -100,6 +155,36 @@ func (q *Queries) CreateAwsCredential(ctx context.Context, arg CreateAwsCredenti
 		&i.Secret,
 		&i.Bucketid,
 		&i.Bucketprefix,
+		&i.Createdat,
+	)
+	return i, err
+}
+
+const createEmbeddedFile = `-- name: CreateEmbeddedFile :one
+INSERT INTO EmbeddedFile (
+	uuid,
+	mailuuid,
+	contenttype
+) VALUES (
+	?, ?, ?
+)
+RETURNING uuid, mailuuid, contenttype, createdat
+`
+
+type CreateEmbeddedFileParams struct {
+	Uuid        uuid.UUID
+	Mailuuid    uuid.UUID
+	Contenttype string
+}
+
+func (q *Queries) CreateEmbeddedFile(ctx context.Context, arg CreateEmbeddedFileParams) (Embeddedfile, error) {
+	row := q.db.QueryRowContext(ctx, createEmbeddedFile, arg.Uuid, arg.Mailuuid, arg.Contenttype)
+	var i Embeddedfile
+	err := row.Scan(
+		&i.Uuid,
+		&i.Mailuuid,
+		&i.Contenttype,
+		&i.Createdat,
 	)
 	return i, err
 }
@@ -107,28 +192,56 @@ func (q *Queries) CreateAwsCredential(ctx context.Context, arg CreateAwsCredenti
 const createMail = `-- name: CreateMail :one
 INSERT INTO Mail (
 	uuid,
-	boxuuid
+	boxuuid,
+	header,
+	sentfrom,
+	sentto,
+	sentat,
+	content,
+	flags,
+	size
 ) VALUES (
-  ?, ?
+	?, ?, ?, ?, ?, ?, ?, ?, ?
 )
-RETURNING uuid, boxuuid, header, sentat, createdat, size
+RETURNING uuid, boxuuid, header, sentfrom, sentto, sentat, content, flags, size, createdat
 `
 
 type CreateMailParams struct {
-	Uuid    string
-	Boxuuid string
+	Uuid     uuid.UUID
+	Boxuuid  uuid.UUID
+	Header   string
+	Sentfrom string
+	Sentto   string
+	Sentat   time.Time
+	Content  string
+	Flags    string
+	Size     int32
 }
 
 func (q *Queries) CreateMail(ctx context.Context, arg CreateMailParams) (Mail, error) {
-	row := q.db.QueryRowContext(ctx, createMail, arg.Uuid, arg.Boxuuid)
+	row := q.db.QueryRowContext(ctx, createMail,
+		arg.Uuid,
+		arg.Boxuuid,
+		arg.Header,
+		arg.Sentfrom,
+		arg.Sentto,
+		arg.Sentat,
+		arg.Content,
+		arg.Flags,
+		arg.Size,
+	)
 	var i Mail
 	err := row.Scan(
 		&i.Uuid,
 		&i.Boxuuid,
 		&i.Header,
+		&i.Sentfrom,
+		&i.Sentto,
 		&i.Sentat,
-		&i.Createdat,
+		&i.Content,
+		&i.Flags,
 		&i.Size,
+		&i.Createdat,
 	)
 	return i, err
 }
@@ -137,23 +250,36 @@ const createMailBox = `-- name: CreateMailBox :one
 INSERT INTO MailBox (
 	uuid,
 	name,
-	owneruuid
+	owneruuid,
+  attributes
 ) VALUES (
-  ?, ?, ?
+  ?, ?, ?, ?
 )
-RETURNING uuid, name, owneruuid
+RETURNING uuid, name, owneruuid, attributes, createdat
 `
 
 type CreateMailBoxParams struct {
-	Uuid      string
-	Name      string
-	Owneruuid string
+	Uuid       uuid.UUID
+	Name       string
+	Owneruuid  uuid.UUID
+	Attributes []string
 }
 
-func (q *Queries) CreateMailBox(ctx context.Context, arg CreateMailBoxParams) (MailBox, error) {
-	row := q.db.QueryRowContext(ctx, createMailBox, arg.Uuid, arg.Name, arg.Owneruuid)
-	var i MailBox
-	err := row.Scan(&i.Uuid, &i.Name, &i.Owneruuid)
+func (q *Queries) CreateMailBox(ctx context.Context, arg CreateMailBoxParams) (Mailbox, error) {
+	row := q.db.QueryRowContext(ctx, createMailBox,
+		arg.Uuid,
+		arg.Name,
+		arg.Owneruuid,
+		pq.Array(arg.Attributes),
+	)
+	var i Mailbox
+	err := row.Scan(
+		&i.Uuid,
+		&i.Name,
+		&i.Owneruuid,
+		pq.Array(&i.Attributes),
+		&i.Createdat,
+	)
 	return i, err
 }
 
@@ -162,20 +288,20 @@ INSERT INTO Session (
 	uuid,
 	accountuuid
 ) VALUES (
-  ?, ?
+	?, ?
 )
-RETURNING uuid, accountuuid
+RETURNING uuid, accountuuid, createdat
 `
 
 type CreateSessionParams struct {
-	Uuid        string
-	Accountuuid string
+	Uuid        uuid.UUID
+	Accountuuid uuid.UUID
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error) {
 	row := q.db.QueryRowContext(ctx, createSession, arg.Uuid, arg.Accountuuid)
 	var i Session
-	err := row.Scan(&i.Uuid, &i.Accountuuid)
+	err := row.Scan(&i.Uuid, &i.Accountuuid, &i.Createdat)
 	return i, err
 }
 
@@ -186,13 +312,13 @@ INSERT INTO Team (
 	description,
 	credentialuuid
 ) VALUES (
-  ?, ?, ?, ?
+	?, ?, ?, ?
 )
-RETURNING uuid, name, description, credentialuuid
+RETURNING uuid, name, description, credentialuuid, createdat
 `
 
 type CreateTeamParams struct {
-	Uuid           string
+	Uuid           uuid.UUID
 	Name           string
 	Description    sql.NullString
 	Credentialuuid string
@@ -211,6 +337,7 @@ func (q *Queries) CreateTeam(ctx context.Context, arg CreateTeamParams) (Team, e
 		&i.Name,
 		&i.Description,
 		&i.Credentialuuid,
+		&i.Createdat,
 	)
 	return i, err
 }
@@ -220,7 +347,7 @@ DELETE FROM Mail
 WHERE boxuuid = ?
 `
 
-func (q *Queries) DeleteAllMailInMailBox(ctx context.Context, boxuuid string) error {
+func (q *Queries) DeleteAllMailInMailBox(ctx context.Context, boxuuid uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, deleteAllMailInMailBox, boxuuid)
 	return err
 }
@@ -233,7 +360,7 @@ AND owneruuid = ?
 
 type DeleteMailBoxParams struct {
 	Name      string
-	Owneruuid string
+	Owneruuid uuid.UUID
 }
 
 func (q *Queries) DeleteMailBox(ctx context.Context, arg DeleteMailBoxParams) error {
@@ -246,13 +373,13 @@ DELETE FROM Session
 WHERE accountuuid = ?
 `
 
-func (q *Queries) DeleteSessionByUser(ctx context.Context, accountuuid string) error {
+func (q *Queries) DeleteSessionByUser(ctx context.Context, accountuuid uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, deleteSessionByUser, accountuuid)
 	return err
 }
 
 const getAccountByUsername = `-- name: GetAccountByUsername :one
-SELECT uuid, teamuuid, username, password, mailaddress, isquit FROM Account
+SELECT uuid, teamuuid, username, password, mailaddress, isquit, createdat FROM Account
 WHERE username = ?
 `
 
@@ -266,16 +393,17 @@ func (q *Queries) GetAccountByUsername(ctx context.Context, username string) (Ac
 		&i.Password,
 		&i.Mailaddress,
 		&i.Isquit,
+		&i.Createdat,
 	)
 	return i, err
 }
 
 const getAccountByUuid = `-- name: GetAccountByUuid :one
-SELECT uuid, teamuuid, username, password, mailaddress, isquit FROM Account
+SELECT uuid, teamuuid, username, password, mailaddress, isquit, createdat FROM Account
 WHERE uuid = ?
 `
 
-func (q *Queries) GetAccountByUuid(ctx context.Context, uuid string) (Account, error) {
+func (q *Queries) GetAccountByUuid(ctx context.Context, uuid uuid.UUID) (Account, error) {
 	row := q.db.QueryRowContext(ctx, getAccountByUuid, uuid)
 	var i Account
 	err := row.Scan(
@@ -285,25 +413,32 @@ func (q *Queries) GetAccountByUuid(ctx context.Context, uuid string) (Account, e
 		&i.Password,
 		&i.Mailaddress,
 		&i.Isquit,
+		&i.Createdat,
 	)
 	return i, err
 }
 
 const getAllMailBoxInfo = `-- name: GetAllMailBoxInfo :many
-SELECT uuid, name, owneruuid FROM MailBox
+SELECT uuid, name, owneruuid, attributes, createdat FROM MailBox
 WHERE owneruuid = ?
 `
 
-func (q *Queries) GetAllMailBoxInfo(ctx context.Context, owneruuid string) ([]MailBox, error) {
+func (q *Queries) GetAllMailBoxInfo(ctx context.Context, owneruuid uuid.UUID) ([]Mailbox, error) {
 	rows, err := q.db.QueryContext(ctx, getAllMailBoxInfo, owneruuid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []MailBox
+	var items []Mailbox
 	for rows.Next() {
-		var i MailBox
-		if err := rows.Scan(&i.Uuid, &i.Name, &i.Owneruuid); err != nil {
+		var i Mailbox
+		if err := rows.Scan(
+			&i.Uuid,
+			&i.Name,
+			&i.Owneruuid,
+			pq.Array(&i.Attributes),
+			&i.Createdat,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -318,20 +453,26 @@ func (q *Queries) GetAllMailBoxInfo(ctx context.Context, owneruuid string) ([]Ma
 }
 
 const getOneMailBoxInfo = `-- name: GetOneMailBoxInfo :one
-SELECT uuid, name, owneruuid FROM MailBox
+SELECT uuid, name, owneruuid, attributes, createdat FROM MailBox
 WHERE name = ?
 AND owneruuid = ?
 `
 
 type GetOneMailBoxInfoParams struct {
 	Name      string
-	Owneruuid string
+	Owneruuid uuid.UUID
 }
 
-func (q *Queries) GetOneMailBoxInfo(ctx context.Context, arg GetOneMailBoxInfoParams) (MailBox, error) {
+func (q *Queries) GetOneMailBoxInfo(ctx context.Context, arg GetOneMailBoxInfoParams) (Mailbox, error) {
 	row := q.db.QueryRowContext(ctx, getOneMailBoxInfo, arg.Name, arg.Owneruuid)
-	var i MailBox
-	err := row.Scan(&i.Uuid, &i.Name, &i.Owneruuid)
+	var i Mailbox
+	err := row.Scan(
+		&i.Uuid,
+		&i.Name,
+		&i.Owneruuid,
+		pq.Array(&i.Attributes),
+		&i.Createdat,
+	)
 	return i, err
 }
 
@@ -345,7 +486,7 @@ AND owneruuid = ?
 type RenameMailBoxParams struct {
 	Name      string
 	Name_2    string
-	Owneruuid string
+	Owneruuid uuid.UUID
 }
 
 func (q *Queries) RenameMailBox(ctx context.Context, arg RenameMailBoxParams) error {
