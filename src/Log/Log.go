@@ -18,6 +18,21 @@ var (
 )
 
 func Init(mode int) error {
+	// VerboseStyle := chalk.Bold.NewStyle().
+	// 	Style("[VERBOSE]")
+
+	// InfoStyle := chalk.Cyan.NewStyle().
+	// 	WithTextStyle(chalk.Bold).
+	// 	Style("[INFO]")
+
+	// WarnStyle := chalk.Yellow.NewStyle().
+	// 	WithTextStyle(chalk.Bold).
+	// 	Style("[WARN]")
+
+	// ErrorStyle := chalk.Red.NewStyle().
+	// 	WithTextStyle(chalk.Bold).
+	// 	Style("[ERROR]")
+
 	Verbose = log.New(io.Discard, "[VERBOSE] ", log.Ldate|log.Ltime|log.Lshortfile)
 	Info = log.New(io.Discard, "[INFO] ", log.Ldate|log.Ltime|log.Lshortfile)
 	Warn = log.New(io.Discard, "[WARNING] ", log.Ldate|log.Ltime|log.Lshortfile)
@@ -26,12 +41,10 @@ func Init(mode int) error {
 	date := time.Now().Format("2006-01-02_150405")
 	pwd, err := os.Getwd()
 	if err != nil {
-		return err // os.Getwd() 예외처리
+		return err
 	}
 
 	// 경로 포맷팅
-	// FolderPath := fmt.Sprint(pwd, "/logs")
-	// FilePath := fmt.Sprint(pwd, "/logs/", date, ".log")
 	FolderPath := filepath.Join(pwd, "logs")
 	FilePath := filepath.Join(pwd, "logs", fmt.Sprint(date, ".log"))
 
@@ -40,13 +53,13 @@ func Init(mode int) error {
 	if !IsFileExists(FilePath) {
 		_, err = os.Create(FilePath)
 		if err != nil {
-			return err // os.Create() 예외처리
+			return err
 		}
 	}
 
 	LogFile, err := os.OpenFile(FilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 	if err != nil {
-		return err // os.OpenFile() 예외처리
+		return err
 	}
 
 	Writer := io.MultiWriter(LogFile, os.Stdout)
@@ -61,7 +74,7 @@ func Init(mode int) error {
 	}
 
 	if mode >= 2 {
-		Warn = log.New(os.Stdout, "[WARNING] ", log.Ldate|log.Ltime|log.Lshortfile)
+		Warn = log.New(os.Stdout, "[WARN] ", log.Ldate|log.Ltime|log.Lshortfile)
 		Warn.SetOutput(Writer)
 	}
 
