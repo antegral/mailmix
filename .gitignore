@@ -3,3 +3,4 @@
 /src/Mail/MailStorage
 /database.db
 /src/Database/database.db
+.env
