@@ -11,16 +11,6 @@ INSERT INTO AwsCredential (
 )
 RETURNING *;
 
--- name: CreateAccount :one
-INSERT INTO Account (
-	uuid,
-	username,
-	password
-) VALUES (
-  ?, ?, ?
-)
-RETURNING *;
-
 -- name: CreateTeam :one
 INSERT INTO Team (
 	uuid,
@@ -28,7 +18,20 @@ INSERT INTO Team (
 	description,
 	credentialuuid
 ) VALUES (
-  ?, ?, ?, ?
+	?, ?, ?, ?
+)
+RETURNING *;
+
+-- name: CreateAccount :one
+INSERT INTO Account (
+	uuid,
+	teamuuid,
+	username,
+	password,
+	mailaddress,
+	isquit
+) VALUES (
+	?, ?, ?, ?, ?, ?
 )
 RETURNING *;
 
@@ -36,18 +39,47 @@ RETURNING *;
 INSERT INTO MailBox (
 	uuid,
 	name,
-	owneruuid
+	owneruuid,
+  attributes
 ) VALUES (
-  ?, ?, ?
+  ?, ?, ?, ?
 )
 RETURNING *;
 
 -- name: CreateMail :one
 INSERT INTO Mail (
 	uuid,
-	boxuuid
+	boxuuid,
+	header,
+	sentfrom,
+	sentto,
+	sentat,
+	content,
+	flags,
+	size
 ) VALUES (
-  ?, ?
+	?, ?, ?, ?, ?, ?, ?, ?, ?
+)
+RETURNING *;
+
+-- name: CreateAttachment :one
+INSERT INTO Attachment (
+	uuid,
+	mailuuid,
+	cid,
+	contenttype
+) VALUES (
+	?, ?, ?, ?
+)
+RETURNING *;
+
+-- name: CreateEmbeddedFile :one
+INSERT INTO EmbeddedFile (
+	uuid,
+	mailuuid,
+	contenttype
+) VALUES (
+	?, ?, ?
 )
 RETURNING *;
 
@@ -56,7 +88,7 @@ INSERT INTO Session (
 	uuid,
 	accountuuid
 ) VALUES (
-  ?, ?
+	?, ?
 )
 RETURNING *;
 
