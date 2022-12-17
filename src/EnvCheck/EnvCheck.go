@@ -59,7 +59,7 @@ func IsFileExists(filename string) bool {
 	} else if errors.Is(err, os.ErrNotExist) {
 		return false
 	} else {
-		fmt.Println("Log System Initialization Error!")
+		fmt.Println("EnvCheck IsFileExists Error!")
 		panic(err)
 	}
 }
