@@ -47,24 +47,31 @@ type Embeddedfile struct {
 }
 
 type Mail struct {
+	Uid       int64
 	Uuid      uuid.UUID
 	Boxuuid   uuid.UUID
 	Header    string
 	Sentfrom  string
 	Sentto    string
 	Sentat    time.Time
-	Content   string
-	Flags     string
+	Hash      string
+	Flags     []string
 	Size      int32
 	Createdat time.Time
 }
 
 type Mailbox struct {
-	Uuid       uuid.UUID
-	Name       string
-	Owneruuid  uuid.UUID
-	Attributes []string
-	Createdat  time.Time
+	Uuid        uuid.UUID
+	Name        string
+	Owneruuid   uuid.UUID
+	Attributes  []string
+	Messages    int64
+	Recent      int64
+	Unseen      int64
+	Uidnext     int64
+	Uidvalidity int64
+	Appendlimit int64
+	Createdat   time.Time
 }
 
 type Session struct {

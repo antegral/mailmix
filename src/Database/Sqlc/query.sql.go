@@ -14,20 +14,20 @@ import (
 	"github.com/lib/pq"
 )
 
-const countMailBox = `-- name: CountMailBox :one
+const countUserOwnedMailBox = `-- name: CountUserOwnedMailBox :one
 SELECT count(*)
 FROM MailBox
 WHERE name = ?
 AND owneruuid = ?
 `
 
-type CountMailBoxParams struct {
+type CountUserOwnedMailBoxParams struct {
 	Name      string
 	Owneruuid uuid.UUID
 }
 
-func (q *Queries) CountMailBox(ctx context.Context, arg CountMailBoxParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countMailBox, arg.Name, arg.Owneruuid)
+func (q *Queries) CountUserOwnedMailBox(ctx context.Context, arg CountUserOwnedMailBoxParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countUserOwnedMailBox, arg.Name, arg.Owneruuid)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -197,13 +197,13 @@ INSERT INTO Mail (
 	sentfrom,
 	sentto,
 	sentat,
-	content,
-	flags,
+	hash,
+	flags, 
 	size
 ) VALUES (
 	?, ?, ?, ?, ?, ?, ?, ?, ?
 )
-RETURNING uuid, boxuuid, header, sentfrom, sentto, sentat, content, flags, size, createdat
+RETURNING uid, uuid, boxuuid, header, sentfrom, sentto, sentat, hash, flags, size, createdat
 `
 
 type CreateMailParams struct {
@@ -213,8 +213,8 @@ type CreateMailParams struct {
 	Sentfrom string
 	Sentto   string
 	Sentat   time.Time
-	Content  string
-	Flags    string
+	Hash     string
+	Flags    []string
 	Size     int32
 }
 
@@ -226,20 +226,21 @@ func (q *Queries) CreateMail(ctx context.Context, arg CreateMailParams) (Mail, e
 		arg.Sentfrom,
 		arg.Sentto,
 		arg.Sentat,
-		arg.Content,
-		arg.Flags,
+		arg.Hash,
+		pq.Array(arg.Flags),
 		arg.Size,
 	)
 	var i Mail
 	err := row.Scan(
+		&i.Uid,
 		&i.Uuid,
 		&i.Boxuuid,
 		&i.Header,
 		&i.Sentfrom,
 		&i.Sentto,
 		&i.Sentat,
-		&i.Content,
-		&i.Flags,
+		&i.Hash,
+		pq.Array(&i.Flags),
 		&i.Size,
 		&i.Createdat,
 	)
@@ -255,7 +256,7 @@ INSERT INTO MailBox (
 ) VALUES (
   ?, ?, ?, ?
 )
-RETURNING uuid, name, owneruuid, attributes, createdat
+RETURNING uuid, name, owneruuid, attributes, messages, recent, unseen, uidnext, uidvalidity, appendlimit, createdat
 `
 
 type CreateMailBoxParams struct {
@@ -278,6 +279,12 @@ func (q *Queries) CreateMailBox(ctx context.Context, arg CreateMailBoxParams) (M
 		&i.Name,
 		&i.Owneruuid,
 		pq.Array(&i.Attributes),
+		&i.Messages,
+		&i.Recent,
+		&i.Unseen,
+		&i.Uidnext,
+		&i.Uidvalidity,
+		&i.Appendlimit,
 		&i.Createdat,
 	)
 	return i, err
@@ -419,7 +426,7 @@ func (q *Queries) GetAccountByUuid(ctx context.Context, uuid uuid.UUID) (Account
 }
 
 const getAllMailBoxInfo = `-- name: GetAllMailBoxInfo :many
-SELECT uuid, name, owneruuid, attributes, createdat FROM MailBox
+SELECT uuid, name, owneruuid, attributes, messages, recent, unseen, uidnext, uidvalidity, appendlimit, createdat FROM MailBox
 WHERE owneruuid = ?
 `
 
@@ -437,6 +444,12 @@ func (q *Queries) GetAllMailBoxInfo(ctx context.Context, owneruuid uuid.UUID) ([
 			&i.Name,
 			&i.Owneruuid,
 			pq.Array(&i.Attributes),
+			&i.Messages,
+			&i.Recent,
+			&i.Unseen,
+			&i.Uidnext,
+			&i.Uidvalidity,
+			&i.Appendlimit,
 			&i.Createdat,
 		); err != nil {
 			return nil, err
@@ -453,7 +466,7 @@ func (q *Queries) GetAllMailBoxInfo(ctx context.Context, owneruuid uuid.UUID) ([
 }
 
 const getOneMailBoxInfo = `-- name: GetOneMailBoxInfo :one
-SELECT uuid, name, owneruuid, attributes, createdat FROM MailBox
+SELECT uuid, name, owneruuid, attributes, messages, recent, unseen, uidnext, uidvalidity, appendlimit, createdat FROM MailBox
 WHERE name = ?
 AND owneruuid = ?
 `
@@ -471,6 +484,12 @@ func (q *Queries) GetOneMailBoxInfo(ctx context.Context, arg GetOneMailBoxInfoPa
 		&i.Name,
 		&i.Owneruuid,
 		pq.Array(&i.Attributes),
+		&i.Messages,
+		&i.Recent,
+		&i.Unseen,
+		&i.Uidnext,
+		&i.Uidvalidity,
+		&i.Appendlimit,
 		&i.Createdat,
 	)
 	return i, err
@@ -507,5 +526,23 @@ type SetAccountPasswordParams struct {
 
 func (q *Queries) SetAccountPassword(ctx context.Context, arg SetAccountPasswordParams) error {
 	_, err := q.db.ExecContext(ctx, setAccountPassword, arg.Password, arg.Username)
+	return err
+}
+
+const updateMailBox = `-- name: UpdateMailBox :exec
+UPDATE MailBox
+SET name = ?
+WHERE name = ?
+AND owneruuid = ?
+`
+
+type UpdateMailBoxParams struct {
+	Name      string
+	Name_2    string
+	Owneruuid uuid.UUID
+}
+
+func (q *Queries) UpdateMailBox(ctx context.Context, arg UpdateMailBoxParams) error {
+	_, err := q.db.ExecContext(ctx, updateMailBox, arg.Name, arg.Name_2, arg.Owneruuid)
 	return err
 }
