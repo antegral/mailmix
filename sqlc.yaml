@@ -6,4 +6,5 @@ sql:
     gen:
       go:
         package: "ORM"
+        sql_package: "pgx/v5"
         out: "src/Database/Sqlc"
