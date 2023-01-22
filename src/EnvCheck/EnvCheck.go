@@ -28,7 +28,7 @@ func Run() error {
 		return err
 	}
 
-	FileInfo, err := os.Stat(FilePath)
+	FileInfo, err := File.Stat()
 	if err != nil {
 		return err
 	}
