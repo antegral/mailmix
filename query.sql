@@ -54,8 +54,8 @@ INSERT INTO Mail (
 	sentfrom,
 	sentto,
 	sentat,
-	content,
-	flags,
+	hash,
+	flags, 
 	size
 ) VALUES (
 	?, ?, ?, ?, ?, ?, ?, ?, ?
@@ -133,8 +133,14 @@ SET name = ?
 WHERE name = ?
 AND owneruuid = ?;
 
--- name: CountMailBox :one
+-- name: CountUserOwnedMailBox :one
 SELECT count(*)
 FROM MailBox
+WHERE name = ?
+AND owneruuid = ?;
+
+-- name: UpdateMailBox :exec
+UPDATE MailBox
+SET name = ?
 WHERE name = ?
 AND owneruuid = ?;
