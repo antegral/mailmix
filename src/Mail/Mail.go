@@ -7,10 +7,13 @@ import (
 	"os"
 
 	AwsGateway "antegral.net/mailmix/src/AwsGateway"
+	"antegral.net/mailmix/src/Database"
+	ORM "antegral.net/mailmix/src/Database/Sqlc"
 	"github.com/DusanKasan/parsemail"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
+	"github.com/zeebo/blake3"
 )
 
 // 메일이 저장될 파일을 만들고 다운로드 합니다.
@@ -59,9 +62,37 @@ func DownloadMail(User aws.Config, Bucket string, BucketPrefix string) error {
 }
 
 func IndexMail(Mail io.Reader) error {
-	_, err := parsemail.Parse(Mail)
+	// TODO: 메일 저장 후 DB에 기록
+
+	ParsedMail, err := parsemail.Parse(Mail)
 	if err != nil {
 		return err
 	}
+
+	ctx := context.Background()
+	database, err := Database.GetDatabase()
+	if err != nil {
+		return nil
+	}
+
+	// Import ORM
+	Queries := ORM.New(database)
+
+	h := blake3.New()
+	h.Write([]byte(Mail))
+	Hash := h.Sum(nil)
+
+	Queries.CreateMail(ctx, ORM.CreateMailParams{
+		Uuid: uuid.New(),
+		Boxuuid: uuid.New(), // TODO: User의 기본 Mailbox UUID 가져와서 넣기
+		Header:   ParsedMail.Header,
+		Sentfrom: ParsedMail.Sender.String(),
+		Sentto:   ParsedMail.To[0],
+		Sentat:   ParsedMail.Date,
+		hash:  Hash,
+		Flags:    string
+		Size:     int32
+	})
+
 	return nil
 }
