@@ -14,11 +14,11 @@ type ImapUser struct {
 	Query   *ORM.Queries
 }
 
-func (User ImapUser) Username() string {
+func (User *ImapUser) Username() string {
 	return User.Data.Username
 }
 
-func (User ImapUser) ListMailboxes(subscribed bool) ([]backend.Mailbox, error) {
+func (User *ImapUser) ListMailboxes(subscribed bool) ([]backend.Mailbox, error) {
 	ctx := context.Background()
 
 	// TODO: Mailbox (Mailbox implementation: /src/Backend/Mailbox.go)
@@ -30,11 +30,11 @@ func (User ImapUser) ListMailboxes(subscribed bool) ([]backend.Mailbox, error) {
 	return nil, nil
 }
 
-func (User ImapUser) GetMailbox(name string) (backend.Mailbox, error) {
+func (User *ImapUser) GetMailbox(name string) (backend.Mailbox, error) {
 	return nil, nil
 }
 
-func (User ImapUser) CreateMailbox(name string) error {
+func (User *ImapUser) CreateMailbox(name string) error {
 	ctx := context.Background()
 
 	_, err := User.Query.CreateMailBox(ctx, ORM.CreateMailBoxParams{
@@ -49,7 +49,7 @@ func (User ImapUser) CreateMailbox(name string) error {
 	return nil
 }
 
-func (User ImapUser) DeleteMailbox(name string) error {
+func (User *ImapUser) DeleteMailbox(name string) error {
 	ctx := context.Background()
 
 	MailBox, err := User.Query.GetOneMailBoxInfo(ctx, ORM.GetOneMailBoxInfoParams{
@@ -76,7 +76,7 @@ func (User ImapUser) DeleteMailbox(name string) error {
 	return nil
 }
 
-func (User ImapUser) RenameMailbox(existingName, newName string) error {
+func (User *ImapUser) RenameMailbox(existingName, newName string) error {
 	ctx := context.Background()
 
 	Count, err := User.Query.CountUserOwnedMailBox(ctx, ORM.CountUserOwnedMailBoxParams{
@@ -103,7 +103,7 @@ func (User ImapUser) RenameMailbox(existingName, newName string) error {
 	return nil
 }
 
-func (User ImapUser) Logout() error {
+func (User *ImapUser) Logout() error {
 	ctx := context.Background()
 
 	err := User.Query.DeleteSessionByUser(ctx, User.Data.Uuid)

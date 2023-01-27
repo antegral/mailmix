@@ -24,12 +24,12 @@ type Mailbox struct {
 }
 
 // Name returns this mailbox name.
-func (b Mailbox) Name() string {
+func (b *Mailbox) Name() string {
 	return b.Desc.Name
 }
 
 // Info returns this mailbox info.
-func (b Mailbox) Info() (*imap.MailboxInfo, error) {
+func (b *Mailbox) Info() (*imap.MailboxInfo, error) {
 	// TODO: Getting Mailbox attributes
 	// Mailbox Attributes (https://www.iana.org/assignments/imap-mailbox-name-attributes/imap-mailbox-name-attributes.xhtml)
 	MailboxInfo := imap.MailboxInfo{
@@ -45,7 +45,7 @@ func (b Mailbox) Info() (*imap.MailboxInfo, error) {
 // and UnseenSeqNum in the returned MailboxStatus must be always populated.
 // This function does not affect the state of any messages in the mailbox. See
 // RFC 3501 section 6.3.10 for a list of items that can be requested.
-func (b Mailbox) Status(items []imap.StatusItem) (*imap.MailboxStatus, error) {
+func (b *Mailbox) Status(items []imap.StatusItem) (*imap.MailboxStatus, error) {
 	// TODO: Implementing StatusItem
 
 	Result := imap.MailboxStatus{
@@ -56,7 +56,7 @@ func (b Mailbox) Status(items []imap.StatusItem) (*imap.MailboxStatus, error) {
 
 // SetSubscribed adds or removes the mailbox to the server's set of "active"
 // or "subscribed" mailboxes.
-func (b Mailbox) SetSubscribed(subscribed bool) error {
+func (b *Mailbox) SetSubscribed(subscribed bool) error {
 	return nil
 }
 
@@ -66,7 +66,7 @@ func (b Mailbox) SetSubscribed(subscribed bool) error {
 // the state on its disk). A checkpoint MAY take a non-instantaneous amount of
 // real time to complete. If a server implementation has no such housekeeping
 // considerations, CHECK is equivalent to NOOP.
-func (b Mailbox) Check() error {
+func (b *Mailbox) Check() error {
 	// TODO: housekeeping considerations
 	return nil
 }
@@ -76,17 +76,17 @@ func (b Mailbox) Check() error {
 // 3501 section 6.4.5 for a list of items that can be requested.
 //
 // Messages must be sent to ch. When the function returns, ch must be closed.
-func (b Mailbox) ListMessages(uid bool, seqset *imap.SeqSet, items []imap.FetchItem, ch chan<- *imap.Message) error {
+func (b *Mailbox) ListMessages(uid bool, seqset *imap.SeqSet, items []imap.FetchItem, ch chan<- *imap.Message) error {
 	// section 6.4.5, RFC 3501: https://www.rfc-editor.org/rfc/rfc3501#section-6.4.5
 	return nil
 }
 
-func (b Mailbox) SearchMessages(uid bool, criteria *imap.SearchCriteria) ([]uint32, error) {
+func (b *Mailbox) SearchMessages(uid bool, criteria *imap.SearchCriteria) ([]uint32, error) {
 	// uid가 true인 경우 반환값에 uid로, false인 경우 메시지 시퀸스 번호로 반환
 	return nil, nil
 }
 
-func (b Mailbox) CreateMessage(flags []string, date time.Time, body imap.Literal) error {
+func (b *Mailbox) CreateMessage(flags []string, date time.Time, body imap.Literal) error {
 	// TODO: 본 메일박스에 메일 넣기 (\Recent Flag 추가로 붙여서 넣어야 함)
 
 	IsFlagged := false
@@ -120,7 +120,7 @@ func (b Mailbox) CreateMessage(flags []string, date time.Time, body imap.Literal
 	b.Queries.CreateMail(ctx, ORM.CreateMailParams{
 		Uuid:     uuid.New(),
 		Boxuuid:  uuid.New(), // TODO: User의 기본 Mailbox UUID 가져와서 넣기
-		Header:   ParsedMail.Header.,
+		Header:   ParsedMail.Header,
 		Sentfrom: ParsedMail.Sender.String(),
 		Sentto:   ParsedMail.To[0],
 		Sentat:   ParsedMail.Date,
@@ -132,19 +132,19 @@ func (b Mailbox) CreateMessage(flags []string, date time.Time, body imap.Literal
 	return nil
 }
 
-func (b Mailbox) UpdateMessagesFlags(uid bool, seqset *imap.SeqSet, operation imap.FlagsOp, flags []string) error {
+func (b *Mailbox) UpdateMessagesFlags(uid bool, seqset *imap.SeqSet, operation imap.FlagsOp, flags []string) error {
 	// TODO: 본 메일박스에 있는 특정 메일의 Flag를 재설정 (seqset에 특정 메일의 고유번호 포함)
 	// uid가 true인 경우 seqset을 uid로 해석하고, false인 경우 메시지 시퀸스 번호로 해석
 	return nil
 }
 
-func (b Mailbox) CopyMessages(uid bool, seqset *imap.SeqSet, dest string) error {
+func (b *Mailbox) CopyMessages(uid bool, seqset *imap.SeqSet, dest string) error {
 	// TODO: dest 메일박스로 본 메일박스에 있는 특정 메일을 복사 (seqset에 특정 메일의 고유번호 포함)
 	// uid가 true인 경우 seqset을 uid로 해석하고, false인 경우 메시지 시퀸스 번호로 해석
 	return nil
 }
 
-func (b Mailbox) Expunge() error {
+func (b *Mailbox) Expunge() error {
 	// TODO: 본 메일박스에 포함되고 \Deleted 플래그가 설정된 모든 메일을 제거
 	return nil
 }
