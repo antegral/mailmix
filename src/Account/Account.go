@@ -62,7 +62,7 @@ func LoginStrategy(connInfo *imap.ConnInfo, username, password string) (backend.
 		return nil, backend.ErrInvalidCredentials
 	}
 
-	return Backend.ImapUser{
+	return &Backend.ImapUser{
 		Session: SessionUuid,
 		Data:    UserData,
 		Query:   Queries,
